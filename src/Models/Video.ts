@@ -30,9 +30,8 @@ const videoSchema = new Schema<IVideo>({
         type: Number,
         required: [true, "Action ID required"],
         default: -1
-    }    
-
+    }
 },{timestamps: true});
 
-const Video = mongoose.model("Video", videoSchema);
+const Video = mongoose.model<IVideo>("Video", videoSchema);
 export default Video;
