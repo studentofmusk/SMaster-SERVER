@@ -1,14 +1,19 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+export enum Gender {
+    MALE,
+    FEMALE,
+    OTHER,
+}
+
 export interface IUser extends Document {
     first_name: string;
     last_name: string;
     email: string;
-    age: number;
     password: string;
+    age: number;
+    gender: Gender;
     current: { [key: string]: string };
-    createdAt: Date;
-    updatedAt: Date;
 }
 
 const userSchema = new Schema<IUser>(
@@ -62,6 +67,11 @@ const userSchema = new Schema<IUser>(
                 ASL: "0.0.0",
             },
         },
+        gender:{
+            type: Number,
+            enum: Gender,
+            default: Gender.MALE
+        }
     },
     { timestamps: true }
 );

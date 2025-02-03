@@ -11,9 +11,10 @@ dotenv.config()
 
 // DataBase Connection
 import "./DB/conn.js"
+import auth_router from "./Routes/auth.routes.js";
 
 //routes
-
+app.use("/api/auth", auth_router);
 
 // Environment variables
 const PORT = process.env.PORT || 5000;
