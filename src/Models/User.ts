@@ -14,6 +14,8 @@ export interface IUser extends Document {
     age: number;
     gender: Gender;
     current: { [key: string]: string };
+    token: string;
+    update_token: (token: string)=> Promise<any>
 }
 
 const userSchema = new Schema<IUser>(
@@ -71,10 +73,21 @@ const userSchema = new Schema<IUser>(
             type: Number,
             enum: Gender,
             default: Gender.MALE
+        },
+        token:{
+            type: String,
+            default: ""
         }
     },
     { timestamps: true }
 );
+
+
+userSchema.methods.update_token = function (token: string){
+    this.token = token;
+    return this.save();
+}
+
 
 const User = mongoose.model<IUser>("User", userSchema);
 export default User;

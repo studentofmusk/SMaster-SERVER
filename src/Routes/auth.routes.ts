@@ -1,9 +1,11 @@
 import { Router} from "express";
-import { signup } from "../Controllers/auth.controller.js";
+import { login, signup, signupOtp } from "../Controllers/auth.controller.js";
 
 // Initialize route
-const auth_router = Router();
+const auth_routes = Router();
 
-auth_router.post("/sign-up", signup);
+auth_routes.post("/sign-up", signup);
+auth_routes.post("/log-in", login);
+auth_routes.post("/signup-otp", signupOtp);
 
-export default auth_router;
+export default auth_routes;
