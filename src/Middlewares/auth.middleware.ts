@@ -19,6 +19,15 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
     try {
 
         const decoded: any = jwt.verify(token, process.env.SECRETKEY!);
+
+        if(!decoded || typeof decoded !== "object" || !decoded.user_id){
+            return res.status(StatusCodes.UNAUTHORIZED).json({
+                success: false,
+                message: "Invalid Token! Please Login again."
+            })
+        }
+
+
         const USER = await User.findById(decoded.user_id);
 
         if(!USER) return res.status(StatusCodes.UNAUTHORIZED).json({
