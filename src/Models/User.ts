@@ -15,7 +15,8 @@ export interface IUser extends Document {
     gender: Gender;
     current: { [key: string]: string };
     token: string;
-    update_token: (token: string)=> Promise<any>
+    update_token: (token: string)=> Promise<any>;
+    change_password: (password: string)=>Promise<any>;
 }
 
 const userSchema = new Schema<IUser>(
@@ -85,6 +86,10 @@ const userSchema = new Schema<IUser>(
 
 userSchema.methods.update_token = function (token: string){
     this.token = token;
+    return this.save();
+}
+userSchema.methods.change_password = function (password: string){
+    this.password = password;
     return this.save();
 }
 
