@@ -15,6 +15,11 @@ export const loginValidator = z.object({
     password: z.string().min(8, "Password must be at least 8 characters"),
 })
 
+export const changePasswordValidator = z.object({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    token: z.string()
+})
+
 export const emailValidator = z.object({
     email: z.string().email("Invalid email format")
 })
