@@ -13,6 +13,7 @@ export const signup = async(req: Request, res: Response): Promise<any> =>{
     try {
         const validatedData = signupValidator.parse(req.body);
 
+        
         // Check user existance
         const isExist = await User.findOne({
             email:validatedData.email
@@ -20,6 +21,14 @@ export const signup = async(req: Request, res: Response): Promise<any> =>{
         if(isExist) return res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
             message: "Email already exist!"
+        });
+        
+        const otp = await OTP.findOne({
+            email: validatedData.email
+        });
+        if(!otp || otp.otp !== validatedData.otp) return res.status(StatusCodes.BAD_GATEWAY).json({
+            success: false,
+            message: "Invalid OTP!"
         });
 
         const salt = await bcryptjs.genSalt(10);
@@ -105,6 +114,7 @@ export const signupOtp = async(req: Request, res: Response): Promise<any> =>{
             });
         }
 
+        console.log("OTP:", otp);
         res.status(StatusCodes.OK).json({ 
             success: true,
             message: "OTP sent successfully" 

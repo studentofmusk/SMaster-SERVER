@@ -8,6 +8,7 @@ export const signupValidator = z.object({
     age: z.number().int().min(5, "Age must be 18 or above").max(100, "Age must be less than 100"),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]),
     language: z.enum(["ASL"]),
+    otp: z.string().min(6, "OTP must have exactly 6 digits").max(6, "OTP must have exactly 6 digits")
 })
 export const loginValidator = z.object({
     email: z.string().email("Invalid email format"),
