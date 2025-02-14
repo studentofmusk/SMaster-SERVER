@@ -34,7 +34,6 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
             success: false,
             message: "Unauthorized Request, Please Login!"            
         });
-
         if(USER.token !== token){
             return res.status(StatusCodes.UNAUTHORIZED).json({
                 success: false,
