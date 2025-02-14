@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { videoValidator } from "../Utils/Validator.js";
+import { lectureValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
+import Lecture from "../Models/Lecture.js";
+import mongoose from "mongoose";
 dotenv.config();
-
-
 const s3 = new S3Client({ region: process.env.AWS_REGION! });
 
 interface MulterS3File extends Express.Multer.File {
@@ -15,6 +15,8 @@ interface MulterS3File extends Express.Multer.File {
     key: string;
 }
 
+
+// -------------- Create Video ---------------------
 export const create_video = async(req: Request, res: Response): Promise<any>=>  {
     try {
 
@@ -39,7 +41,6 @@ export const create_video = async(req: Request, res: Response): Promise<any>=>  
         // Extract S3 URLs and prepare request body
         req.body = {
             ...req.body,
-            action_id: Number(req.body.action_id), 
             thumbnail: files.thumbnail[0].location,
             url: files.video[0].location,
             audio: files.audio[0].location
@@ -79,9 +80,6 @@ export const create_video = async(req: Request, res: Response): Promise<any>=>  
         handleError(error, res, "Error in CREATE VIDEO API");
     }
 }
-
-
-
 const deleteFiles = async (files: {[key: string]: MulterS3File[]}) =>{
     try {
         const deletePromises = Object.values(files)
@@ -101,4 +99,83 @@ const deleteFiles = async (files: {[key: string]: MulterS3File[]}) =>{
         console.log("Error deleting files from s3 : ", error);
     }
     
+}
+
+// -------------- Create Lecture -------------------
+export const create_lecture = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const validatedData = lectureValidator.parse(req.body);
+
+        const isExist = await Lecture.findOne({title: validatedData.title});
+        if(isExist) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "Lecture already exist!"
+        })
+        
+        const VIDEO = await Video.findById(validatedData.video);
+        if(!VIDEO) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "Video Not Found!"
+        });
+
+        const newLecture = new Lecture(validatedData);
+        await newLecture.save();
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: `New Lecture created [${validatedData.title}]`
+        })
+    } catch (error) {
+        handleError(error, res, "Error in CREATE LECTURE API");
+    }
+}
+
+
+// --------------- GET METHODS ---------------------
+export const get_videos = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const video_id = req.query.id;
+        let data;
+        if(video_id){
+            if (! mongoose.isValidObjectId(video_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid Video ID!"
+            });
+            
+            data = await Video.findById(video_id);
+            
+        }else{
+            data = await Video.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "Videos",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET VIDEOS API");
+    }
+}
+export const get_lectures = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const lecture_id = req.query.id;
+        let data;
+        if(lecture_id){
+            if (! mongoose.isValidObjectId(lecture_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid Lecture ID!"
+            });
+            
+            data = await Lecture.findById(lecture_id);
+            
+        }else{
+            data = await Lecture.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "Lectures",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET LECTURES API");
+    }
 }
