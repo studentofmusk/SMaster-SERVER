@@ -1,12 +1,14 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { lectureValidator, videoValidator } from "../Utils/Validator.js";
+import { lectureValidator, t2VideoValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
 import Lecture from "../Models/Lecture.js";
 import mongoose from "mongoose";
+import V2Text from "../Models/V2Text.js";
+import T2Video from "../Models/T2Video.js";
 dotenv.config();
 const s3 = new S3Client({ region: process.env.AWS_REGION! });
 
@@ -126,6 +128,57 @@ export const create_lecture = async(req: Request, res: Response): Promise<any>=>
         })
     } catch (error) {
         handleError(error, res, "Error in CREATE LECTURE API");
+    }
+}
+
+// -------------- Create V2Text -------------------
+export const create_v2text = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const validatedData = v2TextValidator.parse(req.body);
+        
+        const VIDEO = await Video.findById(validatedData.video);
+        if(!VIDEO) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "Video Not Found!"
+        });
+
+        const newV2Text = new V2Text(validatedData);
+        await newV2Text.save()
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: "V2Text created!",
+            data: newV2Text
+        });
+        
+    } catch (error) {
+        handleError(error, res, "Error in CREATE V2TEXT API");
+    }
+}
+
+// -------------- Create T2Video -------------------
+export const create_t2video = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const validatedData = t2VideoValidator.parse(req.body);
+        
+        let VIDEO;
+        for (let i=0; i < 4; i++){
+            VIDEO = await Video.findById(validatedData.options[i]);
+            if(!VIDEO) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Video Not Found!"
+            });
+        }
+
+        const newT2Video = new T2Video(validatedData);
+        await newT2Video.save()
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: "T2Video created!",
+            data: newT2Video
+        });
+
+    } catch (error) {
+        handleError(error, res, "Error in CREATE V2TEXT API");
     }
 }
 

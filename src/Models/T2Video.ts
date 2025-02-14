@@ -1,12 +1,12 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IT2Video extends Document {
-    text: string;
+    title: string;
     options: Types.ObjectId[];
 }
 
 const t2VideoSchema = new Schema<IT2Video>({
-    text: {
+    title: {
         type: String,
         required: [true, "Text is required!"],
     },
