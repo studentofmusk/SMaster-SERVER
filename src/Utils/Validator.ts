@@ -23,3 +23,11 @@ export const changePasswordValidator = z.object({
 export const emailValidator = z.object({
     email: z.string().email("Invalid email format")
 })
+
+export const videoValidator = z.object({
+    title: z.string().min(1, "Title is required"),
+    url: z.string().url("Invalid URL format"),
+    thumbnail: z.string().url("Invalid thumbnail URL format"),
+    audio: z.string().url("Invalid audio URL format"),
+    action_id: z.number().int().min(0, "Action ID must be a positive integer"),
+  });
