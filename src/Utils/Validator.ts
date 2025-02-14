@@ -25,12 +25,11 @@ export const emailValidator = z.object({
     email: z.string().email("Invalid email format")
 });
 
-export const videoValidator = z.object({
+export const videoValidator = z.object({    
     title: z.string()
         .min(1, "Title is required!")
         .max(100, "Title must be under 100 characters.")
-        .toLowerCase()
-        .trim(),
+        .transform((val: string)=>val.toLowerCase().trim()),
     
     action_id: z.string()
         .refine((val) => !isNaN(Number(val)), {
@@ -64,9 +63,35 @@ export const lectureValidator = z.object({
     title: z.string()
         .min(1, "Title is required!")
         .max(100, "Title must be under 100 characters.")
-        .toLowerCase().trim(),
+        .transform((val: string)=>val.toLowerCase().trim()),
     video: z.string()
         .refine((val:string)=>mongoose.isValidObjectId(val), {
             message: "Invalid Video ID! Please check it."
         })
 });
+
+export const v2TextValidator = z.object({
+    title: z.string()
+        .min(1, "Title is required!")
+        .max(100, "Title must be under 100 characters.")
+        .transform((val: string)=>val.toLowerCase().trim()),
+    video: z.string()
+        .refine((val:string)=>mongoose.isValidObjectId(val), {
+            message: "Invalid Video ID! Please check it."
+        }),
+    options: z.array(z.string().min(1, "Option cannot be empty!").toLowerCase().trim()).length(4),
+}).refine((obj)=>obj.options.includes(obj.title), {
+    message: "Options does not contain answer! please check it again."
+});
+
+export const t2VideoValidator = z.object({
+    title: z.string()
+        .min(1, "Title is required!")
+        .toLowerCase()
+        .trim(),
+    options: z.array(z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message:"Invalid Video ID in options"
+    })).length(4).refine((options)=>new Set(options).size === options.length, {
+        message: "Duplicate Video IDs are not allowed in options"
+})
+})
