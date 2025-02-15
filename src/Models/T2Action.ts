@@ -1,9 +1,15 @@
 import mongoose, {Schema, Document, Types} from "mongoose";
 export interface IT2Action extends Document{
+    title: string;
     video: Types.ObjectId;
 }
 
 const t2ActionSchema = new Schema<IT2Action>({
+    title:{
+        type: String,
+        required: true,
+        unique: true
+    },
     video:{
         type: mongoose.Schema.Types.ObjectId,
         ref:"Video",

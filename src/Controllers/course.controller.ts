@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { lectureValidator, t2VideoValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
+import { lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -9,6 +9,8 @@ import Lecture from "../Models/Lecture.js";
 import mongoose from "mongoose";
 import V2Text from "../Models/V2Text.js";
 import T2Video from "../Models/T2Video.js";
+import V2Action from "../Models/V2Action.js";
+import T2Action from "../Models/T2Action.js";
 dotenv.config();
 const s3 = new S3Client({ region: process.env.AWS_REGION! });
 
@@ -179,6 +181,66 @@ export const create_t2video = async(req: Request, res: Response): Promise<any>=>
 
     } catch (error) {
         handleError(error, res, "Error in CREATE V2TEXT API");
+    }
+}
+
+// -------------- Create T2Video -------------------
+export const create_v2action = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const validatedData = v2ActionValidator.parse(req.body);
+        
+        const isExist = await V2Action.findOne({title: validatedData.title});
+        if (isExist) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `[${validatedData.title}] is already exist!`
+        });
+
+        const VIDEO = await Video.findById(validatedData.video);
+        if(!VIDEO) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "Video Not Found!"
+        });
+        
+        const newV2Action = new V2Action(validatedData);
+        await newV2Action.save()
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: "V2Action created!",
+            data: newV2Action
+        });
+
+    } catch (error) {
+        handleError(error, res, "Error in CREATE V2ACTION API");
+    }
+}
+
+// -------------- Create T2Video -------------------
+export const create_t2action = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const validatedData = t2ActionValidator.parse(req.body);
+        
+        const isExist = await T2Action.findOne({title: validatedData.title});
+        if (isExist) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `[${validatedData.title}] is already exist!`
+        });
+
+        const VIDEO = await Video.findById(validatedData.video);
+        if(!VIDEO) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "Video Not Found!"
+        });
+        
+        const newT2Action = new T2Action(validatedData);
+        await newT2Action.save()
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: "T2Action created!",
+            data: newT2Action
+        });
+
+    } catch (error) {
+        handleError(error, res, "Error in CREATE T2ACTION API");
     }
 }
 
