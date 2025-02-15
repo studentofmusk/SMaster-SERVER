@@ -95,3 +95,24 @@ export const t2VideoValidator = z.object({
         message: "Duplicate Video IDs are not allowed in options"
 })
 })
+
+export const v2ActionValidator = z.object({
+    title: z.string()
+        .min(1, "Title is required!")
+        .toLowerCase()
+        .trim(),
+    video: z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message: "Invalid V2Action ID!",
+    })
+})
+
+export const t2ActionValidator = z.object({
+    title: z.string()
+        .min(1, "Title is required!")
+        .toLowerCase()
+        .trim(),
+    video: z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message: "Invalid V2Action ID!",
+    })
+})
+
