@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { addSeasonValidator, createSeasonValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
+import { addGroupValidator, addSeasonValidator, createGroupValidator, createSeasonValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -12,7 +12,8 @@ import T2Video from "../Models/T2Video.js";
 import V2Action from "../Models/V2Action.js";
 import T2Action from "../Models/T2Action.js";
 import Language from "../Models/Language.js";
-import Season, { ISeason } from "../Models/Season.js";
+import Season from "../Models/Season.js";
+import Group from "../Models/Group.js";
 dotenv.config();
 const s3 = new S3Client({ region: process.env.AWS_REGION! });
 
@@ -118,6 +119,76 @@ export const add_season = async (req: Request, res: Response):Promise<any>=>{
     }
 };
 
+// -------------- Create Group ----------------------
+export const create_group = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = createGroupValidator.parse(req.body);
+        
+        const SEASON = await Season.findById(validatedData.season_id);
+        if(!SEASON) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Invalid Season ID!'
+        });
+        
+        const isExist = await Group.findOne(validatedData);
+        if(isExist) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Group already exist!'
+        });
+
+        const newGroup = new Group(validatedData);
+        await newGroup.save();
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: 'Group created!',
+            data:newGroup
+        });
+    } catch (error) {
+        handleError(error, res, 'Error in CREATE GROUP API');
+    }
+};
+
+export const add_group = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = addGroupValidator.parse(req.body);
+
+        const SEASON = await Season.findById(validatedData.season_id);
+        if(!SEASON) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Invalid Season ID!'
+        });
+
+        const GROUP = await Group.findById(validatedData.group_id);
+        if(!GROUP) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Invalid Group ID!'
+        });
+
+        if(!GROUP.season_id.equals(SEASON._id as any)) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Season ID is not match with Group\'s season_id!'
+        });
+
+        SEASON.add_group(GROUP._id as Types.ObjectId);
+        await SEASON.save();
+
+        if(SEASON.groups?.some((id:Types.ObjectId)=>id.equals(GROUP._id as any))) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Group already exist!'
+        });
+        
+        
+        res.status(StatusCodes.BAD_REQUEST).json({
+            success: true,
+            message: `Group [${GROUP.title}] added in ${SEASON.title}!`,
+            data:SEASON
+        });
+        
+
+    } catch (error) {
+        handleError(error, res, 'Error in ADD GROUP API');
+    }
+};
 
 // -------------- Create Lecture -------------------
 export const create_lecture = async(req: Request, res: Response): Promise<any>=>{
@@ -352,7 +423,7 @@ export const get_languages = async(req: Request, res: Response): Promise<any>=>{
         if(language_id){
             if (! mongoose.isValidObjectId(language_id)) return res.status(StatusCodes.BAD_REQUEST).json({
                 success: false,
-                message: "Invalid Video ID!"
+                message: "Invalid Language ID!"
             });
             
             data = await Language.findById(language_id);
@@ -366,7 +437,55 @@ export const get_languages = async(req: Request, res: Response): Promise<any>=>{
             data: data
         })
     } catch (error) {
+        handleError(error, res, "Error in GET LANGUAGES API");
+    }
+}
+export const get_seasons = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const season_id = req.query.id;
+        let data;
+        if(season_id){
+            if (! mongoose.isValidObjectId(season_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid Season ID!"
+            });
+            
+            data = await Season.findById(season_id);
+            
+        }else{
+            data = await Season.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "Seasons",
+            data: data
+        })
+    } catch (error) {
         handleError(error, res, "Error in GET VIDEOS API");
+    }
+}
+export const get_groups = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const group_id = req.query.id;
+        let data;
+        if(group_id){
+            if (! mongoose.isValidObjectId(group_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid Group ID!"
+            });
+            
+            data = await Group.findById(group_id);
+            
+        }else{
+            data = await Group.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "Groups",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET GROUPS API");
     }
 }
 export const get_videos = async(req: Request, res: Response): Promise<any>=>{

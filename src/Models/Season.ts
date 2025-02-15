@@ -4,6 +4,7 @@ export interface ISeason extends Document{
     title: string;
     language_id: Types.ObjectId;
     groups: Types.ObjectId[];
+    add_group: (group_id: Types.ObjectId)=>any
 }
 
 const seasonSchema = new Schema<ISeason>({
@@ -23,7 +24,14 @@ const seasonSchema = new Schema<ISeason>({
     }
 },{timestamps: true});
 
+
+
 seasonSchema.index({title:1, language_id: 1}, {unique: true})
+seasonSchema.methods.add_group = function (group_id: Types.ObjectId){
+    if(!this.groups?.some((id: Types.ObjectId)=>id.equals(group_id))){
+        this.groups.push(group_id)
+    }
+}
 
 const Season = mongoose.model<ISeason>("Season", seasonSchema);
 export default Season;

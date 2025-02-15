@@ -47,6 +47,22 @@ export const addSeasonValidator = z.object({
     })
 })
 
+export const createGroupValidator = z.object({
+    title: z.string().min(4, "Title length more than 4").toLowerCase().trim(),
+    season_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message:"Invalid Group ID"
+    })
+});
+
+export const addGroupValidator = z.object({
+    season_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message: "Invalid Season ID!"
+    }),
+    group_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message: "Invalid Group ID!"
+    })
+})
+
 export const lectureValidator = z.object({
     title: z.string()
         .min(1, "Title is required!")
