@@ -294,3 +294,99 @@ export const get_lectures = async(req: Request, res: Response): Promise<any>=>{
         handleError(error, res, "Error in GET LECTURES API");
     }
 }
+export const get_v2text = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const v2text_id = req.query.id;
+        let data;
+        if(v2text_id){
+            if (! mongoose.isValidObjectId(v2text_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid V2Text ID!"
+            });
+            
+            data = await V2Text.findById(v2text_id);
+            
+        }else{
+            data = await V2Text.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "V2Text",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET V2TEXT API");
+    }
+}
+export const get_t2video = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const t2video_id = req.query.id;
+        let data;
+        if(t2video_id){
+            if (! mongoose.isValidObjectId(t2video_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid T2Video ID!"
+            });
+            
+            data = await T2Video.findById(t2video_id);
+            
+        }else{
+            data = await T2Video.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "T2Video",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET T2VIDEO API");
+    }
+}
+export const get_v2action = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const v2action_id = req.query.id;
+        let data;
+        if(v2action_id){
+            if (! mongoose.isValidObjectId(v2action_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid V2Action ID!"
+            });
+            
+            data = await V2Action.findById(v2action_id);
+            
+        }else{
+            data = await V2Action.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "V2Action",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET V2ACTION API");
+    }
+}
+export const get_t2action = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const t2video_id = req.query.id;
+        let data;
+        if(t2video_id){
+            if (! mongoose.isValidObjectId(t2video_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid T2Action ID!"
+            });
+            
+            data = await T2Action.findById(t2video_id);
+            
+        }else{
+            data = await T2Action.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "T2Action",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET T2ACTION API");
+    }
+}

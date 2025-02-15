@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { uploadVideo } from "../Utils/upload.js";
-import { create_lecture, create_t2action, create_t2video, create_v2action, create_v2text, create_video, get_lectures, get_videos } from "../Controllers/course.controller.js";
+import { create_lecture, create_t2action, create_t2video, create_v2action, create_v2text, create_video, get_lectures, get_t2action, get_t2video, get_v2action, get_v2text, get_videos } from "../Controllers/course.controller.js";
 const course_routes = Router();
 
 course_routes.post("/create-video", uploadVideo, create_video);
@@ -11,7 +11,11 @@ course_routes.post("/create-v2action", create_v2action);
 course_routes.post("/create-t2action", create_t2action);
 
 
-course_routes.get("/get-videos", get_videos)
-course_routes.get("/get-lectures", get_lectures)
+course_routes.get("/get-videos", get_videos);
+course_routes.get("/get-lectures", get_lectures);
+course_routes.get("/get-v2text", get_v2text);
+course_routes.get("/get-t2video", get_t2video);
+course_routes.get("/get-v2action", get_v2action);
+course_routes.get("/get-t2action", get_t2action);
 
 export default course_routes;
