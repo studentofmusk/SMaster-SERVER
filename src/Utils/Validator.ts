@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
+import { title } from "process";
 import {z} from "zod";
 
+// ----------------- Auth -------------------
 export const signupValidator = z.object({
     first_name: z.string().min(2, "First name is required").trim(),
     last_name: z.string().min(2, "Last name is required").trim(),
@@ -25,39 +27,25 @@ export const emailValidator = z.object({
     email: z.string().email("Invalid email format")
 });
 
-export const videoValidator = z.object({    
-    title: z.string()
-        .min(1, "Title is required!")
-        .max(100, "Title must be under 100 characters.")
-        .transform((val: string)=>val.toLowerCase().trim()),
-    
-    action_id: z.string()
-        .refine((val) => !isNaN(Number(val)), {
-            message: "Action ID must be a number!",
-        })
-        .transform((val) => Number(val))
-        .refine((val)=> val>= 0, {
-            message: "action_id must be possitive value!"
-        }),
+// ----------------- Course -------------------
 
-    url: z.string()
-        .url("Invalid video URL!")
-        .refine((val) => val.endsWith(".mp4"), {
-            message: "Only .mp4 videos are allowed!",
-        }),
+export const languageValidator = z.object({
+    title: z.string().min(3, "Title must contain 3 characters!").toUpperCase().trim(),
+})
 
-    thumbnail: z.string()
-        .url("Invalid thumbnail URL!")
-        .refine((val) => /\.(jpg|jpeg|png)$/i.test(val), {
-            message: "Only JPG, JPEG, or PNG images are allowed for thumbnails!",
-        }),
-
-    audio: z.string()
-        .url("Invalid audio URL!")
-        .refine((val) => val.endsWith(".mp3"), {
-            message: "Only .mp3 files are allowed for audio!",
-        }),
+export const createSeasonValidator = z.object({
+    title: z.string().min(8, "Title should contain minimum 8 charecters. [Eg. Season N]").toUpperCase().trim(),
+    language_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message:"Invalid Language ID!"
+    })
 });
+
+export const addSeasonValidator = z.object({
+    language:z.string().toUpperCase().trim(),
+    season_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message: "Invalid Season ID!"
+    })
+})
 
 export const lectureValidator = z.object({
     title: z.string()
@@ -115,4 +103,39 @@ export const t2ActionValidator = z.object({
         message: "Invalid V2Action ID!",
     })
 })
+
+export const videoValidator = z.object({    
+    title: z.string()
+        .min(1, "Title is required!")
+        .max(100, "Title must be under 100 characters.")
+        .transform((val: string)=>val.toLowerCase().trim()),
+    
+    action_id: z.string()
+        .refine((val) => !isNaN(Number(val)), {
+            message: "Action ID must be a number!",
+        })
+        .transform((val) => Number(val))
+        .refine((val)=> val>= 0, {
+            message: "action_id must be possitive value!"
+        }),
+
+    url: z.string()
+        .url("Invalid video URL!")
+        .refine((val) => val.endsWith(".mp4"), {
+            message: "Only .mp4 videos are allowed!",
+        }),
+
+    thumbnail: z.string()
+        .url("Invalid thumbnail URL!")
+        .refine((val) => /\.(jpg|jpeg|png)$/i.test(val), {
+            message: "Only JPG, JPEG, or PNG images are allowed for thumbnails!",
+        }),
+
+    audio: z.string()
+        .url("Invalid audio URL!")
+        .refine((val) => val.endsWith(".mp3"), {
+            message: "Only .mp3 files are allowed for audio!",
+        }),
+});
+
 

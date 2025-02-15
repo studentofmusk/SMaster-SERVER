@@ -1,5 +1,12 @@
 import mongoose, {Schema, Types, Document} from "mongoose";
 
+export enum LessonTypes {
+    LECTURE="LECTURE",
+    V2TEXT="VIDEO_TO_TEXT",
+    T2VIDEO="TEXT_TO_VIDEO",
+    V2ACTION="VIDEO_TO_ACTION",
+    T2ACTION="TEXT_TO_ACTION"
+}
 
 export interface ILesson extends Document{
     total_xp: number
@@ -9,8 +16,8 @@ export interface ILesson extends Document{
         skippable: boolean,
         xp: number
     }[];
-    group_type: Types.ObjectId
-}
+    group_id: Types.ObjectId
+};
 
 const lessonSchema = new Schema<ILesson>({
     total_xp:{
@@ -18,7 +25,7 @@ const lessonSchema = new Schema<ILesson>({
         required: [true, "Total XP is required!"],
         min:[0, "Total XP must be non-negative."]
     },
-    group_type:{
+    group_id:{
         type: Schema.Types.ObjectId,
         required: [true, "Group type is required!"]
     },
@@ -26,6 +33,7 @@ const lessonSchema = new Schema<ILesson>({
         {
             topic_type:{
                 type: String,
+                enum: LessonTypes,
                 required: [true, "Topic type is required!"]
             },
             topic_id:{
