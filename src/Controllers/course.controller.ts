@@ -1,16 +1,18 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
+import { addSeasonValidator, createSeasonValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
 import Lecture from "../Models/Lecture.js";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import V2Text from "../Models/V2Text.js";
 import T2Video from "../Models/T2Video.js";
 import V2Action from "../Models/V2Action.js";
 import T2Action from "../Models/T2Action.js";
+import Language from "../Models/Language.js";
+import Season, { ISeason } from "../Models/Season.js";
 dotenv.config();
 const s3 = new S3Client({ region: process.env.AWS_REGION! });
 
@@ -19,91 +21,103 @@ interface MulterS3File extends Express.Multer.File {
     key: string;
 }
 
-
-// -------------- Create Video ---------------------
-export const create_video = async(req: Request, res: Response): Promise<any>=>  {
+// -------------- Create Language -------------------
+export const create_language = async (req: Request, res: Response):Promise<any>=>{
     try {
-
-        if (!req.files || typeof req.files !== "object") {
-            return res.status(StatusCodes.BAD_REQUEST).json({
-                success: false,
-                message: "No files uploaded!",
-            });
-        }
-
-        const files = req.files as {[key: string]: MulterS3File[]}
-
-        // Validate presence of required files
-        if (!files.video?.[0] || !files.thumbnail?.[0] || !files.audio?.[0]) {
-            await deleteFiles(files);
-            return res.status(StatusCodes.BAD_REQUEST).json({
-                success: false,
-                message: "Video, audio, and thumbnail are required!",
-            });
-        }
-
-        // Extract S3 URLs and prepare request body
-        req.body = {
-            ...req.body,
-            thumbnail: files.thumbnail[0].location,
-            url: files.video[0].location,
-            audio: files.audio[0].location
-        };
-
-        const validatedData = videoValidator.safeParse(req.body);
-        if(!validatedData.success){
-            await deleteFiles(files); // 🔹 Cleanup uploaded files
-            return res.status(StatusCodes.BAD_REQUEST).json({
-                success: false,
-                message: "Invalid data format!",
-                error: validatedData.error,
-            });
-        }
-
-        const isExist = await Video.findOne({title: validatedData.data.title})
+        const validatedData = languageValidator.parse(req.body);
         
-        if (isExist) {
-                await deleteFiles(files);
-                return res.status(StatusCodes.BAD_REQUEST).json({
+        const isExist = await Language.findOne({title: validatedData.title});
+        if(isExist) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "Language Already Exist!"
+        });
+        
+        const LANGUAGE = new Language(validatedData);
+        await LANGUAGE.save()
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message:"Language created!"
+        })
+    } catch (error) {
+        handleError(error, res, 'Error in CREATE LANGUAGE API');
+    }
+};
+
+// -------------- Create Season ----------------------
+export const create_season = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = createSeasonValidator.parse(req.body);
+
+        const LANGUAGE = await Language.findById(validatedData.language_id);
+        if(!LANGUAGE) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Language not found! check your [language_id]'
+        });
+
+        const isExist = await Season.findOne(validatedData);
+        if(isExist) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `[${validatedData.title}] is already Exist!`
+        });
+
+        const newSeason = new Season(validatedData);
+        await newSeason.save();
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: 'Season created!',
+            data:newSeason
+        });
+        
+    } catch (error) {
+        handleError(error, res, 'Error in CREATE SEASON API');
+    }
+};
+
+export const add_season = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = addSeasonValidator.parse(req.body);
+
+        const LANGUAGE = await Language.findOne({title:validatedData.language});
+        if(!LANGUAGE) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "LANGUAGE NOT FOUND!"
+        });
+
+        const SEASON = await Season.findById(validatedData.season_id);
+        if(!SEASON) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: "SEASON NOT FOUND!"
+        });
+        
+        
+        if(!SEASON.language_id.equals(LANGUAGE._id as Types.ObjectId)) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Language ID not match with Season\'s language ID'
+        });
+
+        // Check if the season is already in LANGUAGE.seasons
+        if (LANGUAGE.seasons?.some((id) => id.equals(SEASON._id as Types.ObjectId))) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
                 success: false,
-                message: "Video already exist!"
+                message: "Season ID already exists!"
             });
         }
+        
 
-        const newVideo = new Video(validatedData.data);
-        await newVideo.save();
+        LANGUAGE.add_season(SEASON._id as Types.ObjectId);
+        await LANGUAGE.save();
         
         res.status(StatusCodes.CREATED).json({
-            success: true, 
-            message: "Video uploaded successfully!",
-            data: newVideo
+            success: true,
+            message: 'Season added!',
+            data:LANGUAGE
         });
 
     } catch (error) {
-        await deleteFiles(req.files as { [key: string]: MulterS3File[] });
-        handleError(error, res, "Error in CREATE VIDEO API");
+        handleError(error, res, 'Error in ADD SEASON API');
     }
-}
-const deleteFiles = async (files: {[key: string]: MulterS3File[]}) =>{
-    try {
-        const deletePromises = Object.values(files)
-        .flat()
-        .map((file)=>{
-            s3.send(
-                new DeleteObjectCommand({
-                    Bucket:process.env.AWS_BUCKET_NAME!,
-                    Key: file.key,
-                })
-            )
-        });
+};
 
-        await Promise.all(deletePromises);
-        console.log("unused file deleted!");
-    } catch (error) {
-        console.log("Error deleting files from s3 : ", error);
-    }
-    
-}
 
 // -------------- Create Lecture -------------------
 export const create_lecture = async(req: Request, res: Response): Promise<any>=>{
@@ -244,8 +258,117 @@ export const create_t2action = async(req: Request, res: Response): Promise<any>=
     }
 }
 
+// -------------- Create Video ---------------------
+export const create_video = async(req: Request, res: Response): Promise<any>=>  {
+    try {
+
+        if (!req.files || typeof req.files !== "object") {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "No files uploaded!",
+            });
+        }
+
+        const files = req.files as {[key: string]: MulterS3File[]}
+
+        // Validate presence of required files
+        if (!files.video?.[0] || !files.thumbnail?.[0] || !files.audio?.[0]) {
+            await deleteFiles(files);
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Video, audio, and thumbnail are required!",
+            });
+        }
+
+        // Extract S3 URLs and prepare request body
+        req.body = {
+            ...req.body,
+            thumbnail: files.thumbnail[0].location,
+            url: files.video[0].location,
+            audio: files.audio[0].location
+        };
+
+        const validatedData = videoValidator.safeParse(req.body);
+        if(!validatedData.success){
+            await deleteFiles(files); // 🔹 Cleanup uploaded files
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid data format!",
+                error: validatedData.error,
+            });
+        }
+
+        const isExist = await Video.findOne({title: validatedData.data.title})
+        
+        if (isExist) {
+                await deleteFiles(files);
+                return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Video already exist!"
+            });
+        }
+
+        const newVideo = new Video(validatedData.data);
+        await newVideo.save();
+        
+        res.status(StatusCodes.CREATED).json({
+            success: true, 
+            message: "Video uploaded successfully!",
+            data: newVideo
+        });
+
+    } catch (error) {
+        await deleteFiles(req.files as { [key: string]: MulterS3File[] });
+        handleError(error, res, "Error in CREATE VIDEO API");
+    }
+}
+const deleteFiles = async (files: {[key: string]: MulterS3File[]}) =>{
+    try {
+        const deletePromises = Object.values(files)
+        .flat()
+        .map((file)=>{
+            s3.send(
+                new DeleteObjectCommand({
+                    Bucket:process.env.AWS_BUCKET_NAME!,
+                    Key: file.key,
+                })
+            )
+        });
+
+        await Promise.all(deletePromises);
+        console.log("unused file deleted!");
+    } catch (error) {
+        console.log("Error deleting files from s3 : ", error);
+    }
+    
+}
+
 
 // --------------- GET METHODS ---------------------
+export const get_languages = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const language_id = req.query.id;
+        let data;
+        if(language_id){
+            if (! mongoose.isValidObjectId(language_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid Video ID!"
+            });
+            
+            data = await Language.findById(language_id);
+            
+        }else{
+            data = await Language.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "Languages",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET VIDEOS API");
+    }
+}
 export const get_videos = async(req: Request, res: Response): Promise<any>=>{
     try {
         const video_id = req.query.id;
