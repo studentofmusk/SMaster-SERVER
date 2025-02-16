@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { addGroupValidator, addSeasonValidator, createGroupValidator, createSeasonValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
+import { addGroupValidator, addLessonValidator, addSeasonValidator, addTopicValidator, createGroupValidator, createLessonValidator, createSeasonValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -14,6 +14,7 @@ import T2Action from "../Models/T2Action.js";
 import Language from "../Models/Language.js";
 import Season from "../Models/Season.js";
 import Group from "../Models/Group.js";
+import Lesson, { ITopic, TopicTypes } from "../Models/Lesson.js";
 dotenv.config();
 const s3 = new S3Client({ region: process.env.AWS_REGION! });
 
@@ -187,6 +188,129 @@ export const add_group = async (req: Request, res: Response):Promise<any>=>{
 
     } catch (error) {
         handleError(error, res, 'Error in ADD GROUP API');
+    }
+};
+
+// -------------- Create Lesson ----------------------
+export const create_lesson = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = createLessonValidator.parse(req.body);
+        
+        const GROUP = await Group.findById(validatedData.group_id);
+        if(!GROUP) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Invalid Group ID!'
+        });
+
+        const newLesson = new Lesson(validatedData);
+        await newLesson.save();
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: `Lesson created!`,
+            data:newLesson
+        });
+        
+
+    } catch (error) {
+        handleError(error, res, 'Error in CREATE LESSON API');
+    }
+};
+export const add_lesson = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = addLessonValidator.parse(req.body);
+        
+        const LESSON = await Lesson.findById(validatedData.lesson_id);
+        if(!LESSON) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Invalid Lesson ID!`
+        });
+
+        const GROUP = await Group.findById(validatedData.group_id);
+        if(!GROUP) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Invalid Group ID!`
+        });
+        
+        if(!LESSON.group_id.equals(GROUP._id as any)) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Group ID is not match with Lesson\'s group_id!`
+        });
+        
+        GROUP.add_lesson(LESSON._id as Types.ObjectId);
+        await GROUP.save();
+        
+        if(GROUP.lessons.some((id)=>id.equals(LESSON._id as Types.ObjectId))) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Lesson already exist!`
+        });
+        
+
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: `Lesson added into the Group [${GROUP.title}]!`,
+            data:GROUP
+        });
+
+         
+    } catch (error) {
+        handleError(error, res, 'Error in ADD LESSON API');
+    }
+};
+export const add_topic = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = addTopicValidator.parse(req.body);
+
+        const LESSON = await Lesson.findById(validatedData.lesson_id);
+        if(!LESSON) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Invalid Lesson not found!`
+        });
+
+        let isExist;
+        
+        const topic = {
+            ... validatedData.topic,
+            topic_id: new mongoose.Types.ObjectId(validatedData.topic.topic_id)
+        }
+
+        switch (topic.topic_type) {
+            case TopicTypes.LECTURE:
+                isExist = await Lecture.findById(topic.topic_id);
+                break;
+            case TopicTypes.V2TEXT:
+                isExist = await V2Text.findById(topic.topic_id);
+                break;
+            case TopicTypes.T2VIDEO:
+                isExist = await T2Video.findById(topic.topic_id);
+                break;
+            case TopicTypes.V2ACTION:
+                isExist = await V2Action.findById(topic.topic_id);
+                break;
+            case TopicTypes.T2ACTION:
+                isExist = await T2Action.findById(topic.topic_id);
+                break;
+            default:
+                return res.status(StatusCodes.BAD_REQUEST).json({
+                    success: false,
+                    message: `Invalid Topic type!`
+                });
+        }
+
+        if(!isExist) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Invalid Topic ID at ${topic.topic_type}`
+        });
+        
+        LESSON.add_topic(topic);
+        await LESSON.save();
+
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: `Topic added at Lesson Type [${LESSON.lesson_type}]`,
+            data:LESSON
+        });
+    } catch (error) {
+        handleError(error, res, 'Error in ADD TOPICS API');
     }
 };
 
@@ -486,6 +610,30 @@ export const get_groups = async(req: Request, res: Response): Promise<any>=>{
         })
     } catch (error) {
         handleError(error, res, "Error in GET GROUPS API");
+    }
+}
+export const get_lessons = async(req: Request, res: Response): Promise<any>=>{
+    try {
+        const lesson_id = req.query.id;
+        let data;
+        if(lesson_id){
+            if (! mongoose.isValidObjectId(lesson_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid Lesson ID!"
+            });
+            
+            data = await Lesson.findById(lesson_id);
+            
+        }else{
+            data = await Lesson.find();
+        }
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: "Lessons",
+            data: data
+        })
+    } catch (error) {
+        handleError(error, res, "Error in GET LESSONS API");
     }
 }
 export const get_videos = async(req: Request, res: Response): Promise<any>=>{

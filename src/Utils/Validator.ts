@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { title } from "process";
 import {z} from "zod";
+import { LessonTypes, TopicTypes } from "../Models/Lesson.js";
 
 // ----------------- Auth -------------------
 export const signupValidator = z.object({
@@ -63,6 +63,29 @@ export const addGroupValidator = z.object({
     })
 })
 
+export const createLessonValidator = z.object({
+    group_id:z.string().refine((id)=>mongoose.isValidObjectId(id), 
+    {message: "Invalid Group ID!"}),
+    lesson_type: z.nativeEnum(LessonTypes, {
+        message: "Invalid LESSON TYPE!"
+    })
+})
+export const addLessonValidator = z.object({
+    lesson_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
+    group_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
+})
+
+export const addTopicValidator = z.object({
+    lesson_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
+    topic:z.object({
+        topic_type: z.nativeEnum(TopicTypes),
+        topic_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {
+            message: "Invalid Type ID!"
+        }),
+        skippable:z.boolean(),
+        xp:z.number().int().min(0, "XP value must be possitive!")
+    })
+})
 export const lectureValidator = z.object({
     title: z.string()
         .min(1, "Title is required!")
@@ -153,5 +176,6 @@ export const videoValidator = z.object({
             message: "Only .mp3 files are allowed for audio!",
         }),
 });
+
 
 
