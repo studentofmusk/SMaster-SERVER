@@ -29,7 +29,7 @@ const seasonSchema = new Schema<ISeason>({
 seasonSchema.index({title:1, language_id: 1}, {unique: true})
 seasonSchema.methods.add_group = function (group_id: Types.ObjectId){
     if(!this.groups?.some((id: Types.ObjectId)=>id.equals(group_id))){
-        this.groups.push(group_id)
+        this.groups.push(group_id);
     }
 }
 
