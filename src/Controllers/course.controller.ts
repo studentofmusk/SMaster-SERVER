@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { addGroupValidator, addLessonValidator, addSeasonValidator, addTopicValidator, createGroupValidator, createLessonValidator, createSeasonValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
+import { addGroupValidator, addLessonValidator, addSeasonValidator, addTopicValidator, createGroupValidator, createLessonValidator, createSeasonValidator, deleteLectureValidator, deleteT2ActionValidator, deleteT2VideoValidator, deleteV2ActionValidator, deleteV2TextValidator, deleteVideoValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -314,6 +314,7 @@ export const add_topic = async (req: Request, res: Response):Promise<any>=>{
     }
 };
 
+
 // -------------- Create Lecture -------------------
 export const create_lecture = async(req: Request, res: Response): Promise<any>=>{
     try {
@@ -342,6 +343,45 @@ export const create_lecture = async(req: Request, res: Response): Promise<any>=>
     }
 }
 
+export const delete_lecture = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteLectureValidator.parse(req.body);
+        
+        const LECTURE = await Lecture.findById(validatedData.lecture_id);
+
+        if(!LECTURE) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `Lecture ID not found!, Please check.`
+        });
+
+        const LESSONs = await Lesson.find({
+            "topics.topic_type":TopicTypes.LECTURE,
+            "topics.topic_id":LECTURE._id
+        })
+        if (LESSONs.length) return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `LECTURE is already in use! Please delete all associated LESSONs before removing this LECTURE.`,
+            errors:{
+                LESSONs
+            }
+        });
+        
+        const deleteResult = await LECTURE.deleteOne();
+        if(!deleteResult.deletedCount) return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Failed to delete LECTURE.`
+        });
+        
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `LECTURE deleted successfully!`,
+            data:LECTURE
+        });
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE LECTURE API');
+    }
+};
+
 // -------------- Create V2Text -------------------
 export const create_v2text = async(req: Request, res: Response): Promise<any>=>{
     try {
@@ -365,6 +405,45 @@ export const create_v2text = async(req: Request, res: Response): Promise<any>=>{
         handleError(error, res, "Error in CREATE V2TEXT API");
     }
 }
+
+export const delete_v2text = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteV2TextValidator.parse(req.body);
+        
+        const V2TEXT = await V2Text.findById(validatedData.v2text_id);
+
+        if(!V2TEXT) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `V2Text ID not found!, Please check.`
+        });
+
+        const LESSONs = await Lesson.find({
+            "topics.topic_type":TopicTypes.V2TEXT,
+            "topics.topic_id":V2TEXT._id
+        })
+        if (LESSONs.length) return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `V2TEXT is already in use! Please delete all associated LESSONs before removing this V2TEXT.`,
+            errors:{
+                LESSONs
+            }
+        });
+        
+        const deleteResult = await V2TEXT.deleteOne();
+        if(!deleteResult.deletedCount) return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Failed to delete V2TEXT.`
+        });
+        
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `V2TEXT deleted successfully!`,
+            data:V2TEXT
+        });
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE V2TEXT API');
+    }
+};
 
 // -------------- Create T2Video -------------------
 export const create_t2video = async(req: Request, res: Response): Promise<any>=>{
@@ -393,7 +472,45 @@ export const create_t2video = async(req: Request, res: Response): Promise<any>=>
     }
 }
 
-// -------------- Create T2Video -------------------
+export const delete_t2video = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteT2VideoValidator.parse(req.body);
+        
+        const T2VIDEO = await T2Video.findById(validatedData.t2video_id);
+        if(!T2VIDEO) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `T2Video ID not found!, Please check.`
+        });
+
+        const LESSONs = await Lesson.find({
+            "topics.topic_type":TopicTypes.T2VIDEO,
+            "topics.topic_id":T2VIDEO._id
+        })
+        if (LESSONs.length) return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `T2VIDEO is already in use! Please delete all associated LESSONs before removing this T2VIDEO.`,
+            errors:{
+                LESSONs
+            }
+        });
+        
+        const deleteResult = await T2VIDEO.deleteOne();
+        if(!deleteResult.deletedCount) return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Failed to delete T2VIDEO.`
+        });
+        
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `T2VIDEO deleted successfully!`,
+            data:T2VIDEO
+        });
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE T2VIDEO API');
+    }
+};
+
+// -------------- Create V2Action -------------------
 export const create_v2action = async(req: Request, res: Response): Promise<any>=>{
     try {
         const validatedData = v2ActionValidator.parse(req.body);
@@ -423,7 +540,44 @@ export const create_v2action = async(req: Request, res: Response): Promise<any>=
     }
 }
 
-// -------------- Create T2Video -------------------
+export const delete_v2action = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteV2ActionValidator.parse(req.body);
+        
+        const V2ACTION = await V2Action.findById(validatedData.v2action_id);
+        if(!V2ACTION) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `V2Action ID not found!, Please check.`
+        });
+
+        const LESSONs = await Lesson.find({
+            "topics.topic_type":TopicTypes.V2ACTION,
+            "topics.topic_id":V2ACTION._id
+        })
+        if (LESSONs.length) return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `V2ACTION is already in use! Please delete all associated LESSONs before removing this V2ACTION.`,
+            errors:{
+                LESSONs
+            }
+        });
+        
+        const deleteResult = await V2ACTION.deleteOne();
+        if(!deleteResult.deletedCount) return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Failed to delete V2ACTION.`
+        });
+        
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `V2ACTION deleted successfully!`,
+            data:V2ACTION
+        });
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE V2ACTION API');
+    }
+};
+// -------------- Create T2Action -------------------
 export const create_t2action = async(req: Request, res: Response): Promise<any>=>{
     try {
         const validatedData = t2ActionValidator.parse(req.body);
@@ -453,6 +607,43 @@ export const create_t2action = async(req: Request, res: Response): Promise<any>=
     }
 }
 
+export const delete_t2action = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteT2ActionValidator.parse(req.body);
+        
+        const T2ACTION = await T2Action.findById(validatedData.t2action_id);
+        if(!T2ACTION) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `T2Action ID not found!, Please check.`
+        });
+
+        const LESSONs = await Lesson.find({
+            "topics.topic_type":TopicTypes.T2ACTION,
+            "topics.topic_id":T2ACTION._id
+        })
+        if (LESSONs.length) return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `T2ACTION is already in use! Please delete all associated LESSONs before removing this T2ACTION.`,
+            errors:{
+                LESSONs
+            }
+        });
+        
+        const deleteResult = await T2ACTION.deleteOne();
+        if(!deleteResult.deletedCount) return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Failed to delete T2ACTION.`
+        });
+        
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `T2ACTION deleted successfully!`,
+            data:T2ACTION
+        });
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE T2ACTION API');
+    }
+};
 // -------------- Create Video ---------------------
 export const create_video = async(req: Request, res: Response): Promise<any>=>  {
     try {
@@ -517,6 +708,68 @@ export const create_video = async(req: Request, res: Response): Promise<any>=>  
         handleError(error, res, "Error in CREATE VIDEO API");
     }
 }
+
+export const delete_video = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteVideoValidator.parse(req.body);
+        
+        const VIDEO = await Video.findById(validatedData.video_id);
+        if(!VIDEO) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `Video not found!, Please check video ID!`
+        });
+
+        // Fetch all dependent records in parallel
+        const [LECTUREs, V2TEXTs, T2VIDEOs, T2ACTIONs, V2ACTIONs] = await Promise.all([
+            Lecture.find({ video: VIDEO._id }),
+            V2Text.find({ video: VIDEO._id }),
+            T2Video.find({ options: { $in: [VIDEO._id] } }),
+            T2Action.find({ video: VIDEO._id }),
+            V2Action.find({ video: VIDEO._id })
+        ]);
+
+        if(LECTUREs.length || V2TEXTs.length || T2VIDEOs.length || V2ACTIONs.length || T2ACTIONs.length){
+            return res.status(StatusCodes.CONFLICT).json({
+                success: false,
+                message: `Video is in use! Please delete all associated records before removing this video.`,
+                errors:{
+                    LECTUREs, V2TEXTs, T2VIDEOs, V2ACTIONs, T2ACTIONs
+                } 
+            });
+        }
+
+        // Extract file keys from video (Assuming VIDEO has `url`, `thumbnail`, and `audio` as S3 URLs)
+        const fileKeys = [
+            VIDEO.url.split(".amazonaws.com/")[1],  // Extracts S3 key from full URL
+            VIDEO.thumbnail.split(".amazonaws.com/")[1],
+            VIDEO.audio.split(".amazonaws.com/")[1]
+        ].filter(Boolean); // Removes undefined/null values if any
+
+
+        // Delete files from S3
+        await deleteFilesWithKeys(fileKeys);
+        
+        
+        const deleteResult = await VIDEO.deleteOne();
+        if (!deleteResult.deletedCount) {
+            return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: `Failed to delete video!`
+            });
+        }
+
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `Video deletion successfull!`,
+            data:VIDEO
+        });
+        
+        
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE VIDEO API');
+    }
+};
+
 const deleteFiles = async (files: {[key: string]: MulterS3File[]}) =>{
     try {
         const deletePromises = Object.values(files)
@@ -537,6 +790,25 @@ const deleteFiles = async (files: {[key: string]: MulterS3File[]}) =>{
     }
     
 }
+
+const deleteFilesWithKeys = async (fileKeys: string[]) => {
+    try {
+        if (fileKeys.length === 0) return;
+
+        const deletePromises = fileKeys.map(key =>
+            s3.send(new DeleteObjectCommand({
+                Bucket: process.env.AWS_BUCKET_NAME!,
+                Key: key
+            }))
+        );
+
+        await Promise.all(deletePromises);
+        console.log("Files deleted from S3 successfully!");
+
+    } catch (error) {
+        console.error("Error deleting files from S3:", error);
+    }
+};
 
 
 // --------------- GET METHODS ---------------------
