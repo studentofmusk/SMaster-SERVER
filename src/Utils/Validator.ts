@@ -178,4 +178,25 @@ export const videoValidator = z.object({
 });
 
 
+export const deleteLectureValidator = z.object({
+    lecture_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
+}) 
+export const deleteV2TextValidator = z.object({
+    v2text_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
+}) 
+export const deleteT2VideoValidator = z.object({
+    t2video_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
+}) 
+export const deleteV2ActionValidator = z.object({
+    v2action_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid V2Action ID!"})
+}) 
+export const deleteT2ActionValidator = z.object({
+    t2action_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Action ID ID!"})
+}) 
+
+export const deleteVideoValidator = z.object({
+    video_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid Video ID!"})
+}) 
+
+
 
