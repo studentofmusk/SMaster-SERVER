@@ -19,7 +19,7 @@ export interface ILesson extends Document{
     topics: ITopic[];
     lesson_type: LessonTypes;
     group_id: Types.ObjectId;
-    add_topic:(topic: ITopic)=>any;
+    add_topic:(topic: ITopic)=>void;
 };
 
 export interface ITopic {

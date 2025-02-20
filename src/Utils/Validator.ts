@@ -41,7 +41,8 @@ export const createSeasonValidator = z.object({
 });
 
 export const addSeasonValidator = z.object({
-    language:z.string().toUpperCase().trim(),
+    language_id:z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message: "Invalid Language ID!"}),
     season_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
         message: "Invalid Season ID!"
     })
@@ -75,13 +76,25 @@ export const addLessonValidator = z.object({
     group_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
 })
 
+export const updateLessonValidator = z.object({
+    lesson_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
+    topics: z.array(z.object({
+        topic_type: z.nativeEnum(TopicTypes),
+        topic_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {
+            message: "Invalid Type ID!"
+        }).transform((id)=>new mongoose.Types.ObjectId(id)),
+        skippable:z.boolean(),
+        xp:z.number().int().min(0, "XP value must be possitive!")
+    }))
+});
+
 export const addTopicValidator = z.object({
     lesson_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
     topic:z.object({
         topic_type: z.nativeEnum(TopicTypes),
         topic_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {
             message: "Invalid Type ID!"
-        }),
+        }).transform((id)=>new mongoose.Types.ObjectId(id)),
         skippable:z.boolean(),
         xp:z.number().int().min(0, "XP value must be possitive!")
     })
