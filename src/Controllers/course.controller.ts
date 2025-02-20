@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { addGroupValidator, addLessonValidator, addSeasonValidator, addTopicValidator, createGroupValidator, createLessonValidator, createSeasonValidator, deleteLectureValidator, deleteT2ActionValidator, deleteT2VideoValidator, deleteV2ActionValidator, deleteV2TextValidator, deleteVideoValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
+import { addGroupValidator, addLessonValidator, addSeasonValidator, addTopicValidator, createGroupValidator, createLessonValidator, createSeasonValidator, deleteLectureValidator, deleteT2ActionValidator, deleteT2VideoValidator, deleteV2ActionValidator, deleteV2TextValidator, deleteVideoValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, updateLessonValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -79,8 +79,8 @@ export const add_season = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = addSeasonValidator.parse(req.body);
 
-        const LANGUAGE = await Language.findOne({title:validatedData.language});
-        if(!LANGUAGE) return res.status(StatusCodes.BAD_REQUEST).json({
+        const LANGUAGE = await Language.findById(validatedData.language_id);
+        if(!LANGUAGE) return res.status(StatusCodes.NOT_FOUND).json({
             success: false,
             message: "LANGUAGE NOT FOUND!"
         });
@@ -256,6 +256,76 @@ export const add_lesson = async (req: Request, res: Response):Promise<any>=>{
         handleError(error, res, 'Error in ADD LESSON API');
     }
 };
+export const update_lesson = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = updateLessonValidator.parse(req.body);
+        
+        const LESSON = await Lesson.findById(validatedData.lesson_id);
+        if(!LESSON) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `Lesson not found! please check Lesson ID.`
+        });
+
+        // Validate topics
+        const invalidTopics:{success:boolean, message:string}[] = [];
+        await Promise.all(
+            validatedData.topics.map(async (topic, idx) => {
+                let isExist;
+                switch (topic.topic_type) {
+                    case TopicTypes.LECTURE:
+                        isExist = await Lecture.findById(topic.topic_id);
+                        break;
+                    case TopicTypes.V2TEXT:
+                        isExist = await V2Text.findById(topic.topic_id);
+                        break;
+                    case TopicTypes.T2VIDEO:
+                        isExist = await T2Video.findById(topic.topic_id);
+                        break;
+                    case TopicTypes.V2ACTION:
+                        isExist = await V2Action.findById(topic.topic_id);
+                        break;
+                    case TopicTypes.T2ACTION:
+                        isExist = await T2Action.findById(topic.topic_id);
+                        break;
+                    default:
+                        invalidTopics.push({
+                            success: false,
+                            message: `Invalid Topic type! Index[${idx}].`,
+                        });
+                        return;
+                }
+
+                if (!isExist) {
+                    invalidTopics.push({
+                        success: false,
+                        message: `Invalid Topic ID at ${topic.topic_type}! Index[${idx}].`,
+                    });
+                }
+            })
+        );
+
+        // If any topic validation failed, return error
+        if (invalidTopics.length > 0) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: invalidTopics[0].message,
+                errors: invalidTopics,
+            });
+        }
+
+        LESSON.topics = validatedData.topics;
+        await LESSON.save();
+        
+        res.status(StatusCodes.CREATED).json({
+            success: true,
+            message: `Lesson updated successfully!`,
+            data:LESSON
+        });
+
+    } catch (error) {
+        handleError(error, res, 'Error in UPDATE LESSON API');
+    }
+};
 export const add_topic = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = addTopicValidator.parse(req.body);
@@ -268,10 +338,7 @@ export const add_topic = async (req: Request, res: Response):Promise<any>=>{
 
         let isExist;
         
-        const topic = {
-            ... validatedData.topic,
-            topic_id: new mongoose.Types.ObjectId(validatedData.topic.topic_id)
-        }
+        const topic = {...validatedData.topic}
 
         switch (topic.topic_type) {
             case TopicTypes.LECTURE:
@@ -313,6 +380,7 @@ export const add_topic = async (req: Request, res: Response):Promise<any>=>{
         handleError(error, res, 'Error in ADD TOPICS API');
     }
 };
+
 
 
 // -------------- Create Lecture -------------------
@@ -680,7 +748,7 @@ export const create_video = async(req: Request, res: Response): Promise<any>=>  
             return res.status(StatusCodes.BAD_REQUEST).json({
                 success: false,
                 message: "Invalid data format!",
-                error: validatedData.error,
+                errors: validatedData.error,
             });
         }
 
