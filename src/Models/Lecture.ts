@@ -14,8 +14,7 @@ const lectureSchema = new Schema<ILecture>({
     video:{
         type: Schema.Types.ObjectId,
         ref:"Video",
-        required: [true, "Video ID must!"],
-        unique: true
+        required: [true, "Video ID must!"]
     }
 }, {timestamps: true});
 
