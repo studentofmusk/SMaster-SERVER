@@ -518,6 +518,7 @@ export const create_t2video = async(req: Request, res: Response): Promise<any>=>
     try {
         const validatedData = t2VideoValidator.parse(req.body);
         
+        let isTitleExist = false;
         let VIDEO;
         for (let i=0; i < 4; i++){
             VIDEO = await Video.findById(validatedData.options[i]);
@@ -525,7 +526,15 @@ export const create_t2video = async(req: Request, res: Response): Promise<any>=>
                 success: false,
                 message: "Video Not Found!"
             });
+
+            if(VIDEO.title === validatedData.title) isTitleExist = true;
         }
+
+        if(!isTitleExist) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Title is not match with options!`
+        });
+        
 
         const newT2Video = new T2Video(validatedData);
         await newT2Video.save()
