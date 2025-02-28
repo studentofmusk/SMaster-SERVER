@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleError } from "../Utils/errorHandler.js";
-import { addGroupValidator, addLessonValidator, addSeasonValidator, addTopicValidator, createGroupValidator, createLessonValidator, createSeasonValidator, deleteLectureValidator, deleteT2ActionValidator, deleteT2VideoValidator, deleteV2ActionValidator, deleteV2TextValidator, deleteVideoValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, updateLessonValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
+import { addGroupValidator, addLessonValidator, addSeasonValidator, addTopicValidator, createGroupValidator, createLessonValidator, createSeasonValidator, deleteGroupValidator, deleteLectureValidator, deleteLessonValidator, deleteSeasonValidator, deleteT2ActionValidator, deleteT2VideoValidator, deleteV2ActionValidator, deleteV2TextValidator, deleteVideoValidator, languageValidator, lectureValidator, t2ActionValidator, t2VideoValidator, updateGroupValidator, updateLessonValidator, updateSeasonValidator, v2ActionValidator, v2TextValidator, videoValidator } from "../Utils/Validator.js";
 import { StatusCodes } from "http-status-codes";
 import Video from "../Models/Video.js";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -14,7 +14,7 @@ import T2Action from "../Models/T2Action.js";
 import Language from "../Models/Language.js";
 import Season from "../Models/Season.js";
 import Group from "../Models/Group.js";
-import Lesson, { ITopic, TopicTypes } from "../Models/Lesson.js";
+import Lesson, { TopicTypes } from "../Models/Lesson.js";
 dotenv.config();
 const s3 = new S3Client({ region: process.env.AWS_REGION! });
 
@@ -74,7 +74,6 @@ export const create_season = async (req: Request, res: Response):Promise<any>=>{
         handleError(error, res, 'Error in CREATE SEASON API');
     }
 };
-
 export const add_season = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = addSeasonValidator.parse(req.body);
@@ -119,6 +118,83 @@ export const add_season = async (req: Request, res: Response):Promise<any>=>{
         handleError(error, res, 'Error in ADD SEASON API');
     }
 };
+export const update_season = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = updateSeasonValidator.parse(req.body);
+
+        const SEASON = await Season.findById(validatedData.season_id);
+        if(!SEASON) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `Season NOT FOUND! Please check.`
+        });
+        let isExist;
+        for (let i=0; i<validatedData.groups.length; i++){
+            const group_id = validatedData.groups[i];
+            isExist = await Group.findById(group_id);
+            
+            if (!isExist) {
+                return res.status(StatusCodes.NOT_FOUND).json({
+                    success: false,
+                    message: `Group NOT FOUND at Index:[${i}]! Please check.`
+                });
+            }
+
+            if (!isExist.season_id.equals(SEASON._id as Types.ObjectId)) {
+                return res.status(StatusCodes.BAD_REQUEST).json({
+                    success: false,
+                    message: `Group Season ID does not match with [${SEASON.title}].`
+                });
+            }
+
+        }
+
+
+        SEASON.groups = validatedData.groups;
+        await SEASON.save();
+
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `Season updated Successfully!`,
+            data:SEASON
+        });
+
+    } catch (error) {
+        handleError(error, res, 'Error in UPDATE SEASON API');
+    }
+};
+export const delete_season = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteSeasonValidator.parse(req.body);
+
+        const SEASON = await Season.findById(validatedData.season_id);
+        if(!SEASON) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `Season NOT FOUND! Please check.`
+        });
+
+        const isAttached = await Language.exists({seasons:SEASON._id});
+        if(isAttached) return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `Cannot delete season. It is currently attached to one or more languages.`
+        });
+
+        const deleteResult = await SEASON.deleteOne();
+        if(!deleteResult.deletedCount) return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Failed to delete Season!`
+        });
+        
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `Season is Deleted!`,
+            data:SEASON
+        });
+        
+
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE SEASON API');
+    }
+};
 
 // -------------- Create Group ----------------------
 export const create_group = async (req: Request, res: Response):Promise<any>=>{
@@ -148,7 +224,6 @@ export const create_group = async (req: Request, res: Response):Promise<any>=>{
         handleError(error, res, 'Error in CREATE GROUP API');
     }
 };
-
 export const add_group = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = addGroupValidator.parse(req.body);
@@ -190,7 +265,84 @@ export const add_group = async (req: Request, res: Response):Promise<any>=>{
         handleError(error, res, 'Error in ADD GROUP API');
     }
 };
+export const update_group = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const validatedData = updateGroupValidator.parse(req.body);
+        const GROUP = await Group.findById(validatedData.group_id);
+        if (!GROUP) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                success: false,
+                message: `Group NOT FOUND!`
+            });
+        }
+        
+        for (let idx = 0; idx < validatedData.lessons.length; idx++) {
+            const lesson_id = validatedData.lessons[idx];
+            const isExist = await Lesson.findById(lesson_id);
+            
+            if (!isExist) {
+                return res.status(StatusCodes.NOT_FOUND).json({
+                    success: false,
+                    message: `Lesson NOT FOUND at Index:[${idx}]! Please check.`
+                });
+            }
 
+            if (!isExist.group_id.equals(GROUP._id as Types.ObjectId)) {
+                return res.status(StatusCodes.BAD_REQUEST).json({
+                    success: false,
+                    message: `Lesson Group ID does not match with [${GROUP.title}].`
+                });
+            }
+        }
+
+        GROUP.lessons = validatedData.lessons;
+        await GROUP.save();
+
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `Group updated Successfully!`,
+            data: GROUP
+        });
+
+    } catch (error) {
+        handleError(error, res, 'Error in UPDATE GROUP API');
+    }
+};
+export const delete_group = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteGroupValidator.parse(req.body);
+
+        const GROUP = await Group.findById(validatedData.group_id);
+        if(!GROUP) return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: `Group NOT FOUND!`
+        });
+        
+        const isAttached = await Season.exists({
+            groups:GROUP._id
+        })
+
+        if (isAttached) return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `Cannot delete group. It is currently attached to one or more seasons.`
+        });
+
+        const deletedResult =  await GROUP.deleteOne();
+        if(!deletedResult.deletedCount) return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Failed to delete GROUP.`
+        });
+
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `Group Deleted Successfully!`,
+            data:GROUP
+        });
+        
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE GROUP API');
+    }
+};
 // -------------- Create Lesson ----------------------
 export const create_lesson = async (req: Request, res: Response):Promise<any>=>{
     try {
@@ -314,6 +466,7 @@ export const update_lesson = async (req: Request, res: Response):Promise<any>=>{
         }
 
         LESSON.topics = validatedData.topics;
+        LESSON.total_xp = validatedData.topics.reduce((sum, topic)=>sum + (topic.xp||0), 0);
         await LESSON.save();
         
         res.status(StatusCodes.CREATED).json({
@@ -380,8 +533,40 @@ export const add_topic = async (req: Request, res: Response):Promise<any>=>{
         handleError(error, res, 'Error in ADD TOPICS API');
     }
 };
+export const delete_lesson = async (req: Request, res: Response):Promise<any>=>{
+    try {
+        const validatedData = deleteLessonValidator.parse(req.body);
+
+        const LESSON = await Lesson.findById(validatedData.lesson_id);
+        if(!LESSON) return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: `Lesson NOT FOUND!`
+        });
+
+        const isAttached = await Group.exists({lessons:LESSON._id});
+        if(isAttached) return res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: `Cannot delete lesson. It is currently attached to one or more groups.`
+        });
 
 
+        const deletedResult =  await LESSON.deleteOne();
+        if(!deletedResult.deletedCount) return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Failed to delete LESSON.`
+        });
+
+        res.status(StatusCodes.OK).json({
+            success: true,
+            message: `Lesson Deleted Successfully!`,
+            data:LESSON
+        });
+
+        
+    } catch (error) {
+        handleError(error, res, 'Error in DELETE LESSON API');
+    }
+};
 
 // -------------- Create Lecture -------------------
 export const create_lecture = async(req: Request, res: Response): Promise<any>=>{
@@ -409,8 +594,7 @@ export const create_lecture = async(req: Request, res: Response): Promise<any>=>
     } catch (error) {
         handleError(error, res, "Error in CREATE LECTURE API");
     }
-}
-
+};
 export const delete_lecture = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = deleteLectureValidator.parse(req.body);
@@ -472,8 +656,7 @@ export const create_v2text = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in CREATE V2TEXT API");
     }
-}
-
+};
 export const delete_v2text = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = deleteV2TextValidator.parse(req.body);
@@ -547,8 +730,7 @@ export const create_t2video = async(req: Request, res: Response): Promise<any>=>
     } catch (error) {
         handleError(error, res, "Error in CREATE V2TEXT API");
     }
-}
-
+};
 export const delete_t2video = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = deleteT2VideoValidator.parse(req.body);
@@ -615,8 +797,7 @@ export const create_v2action = async(req: Request, res: Response): Promise<any>=
     } catch (error) {
         handleError(error, res, "Error in CREATE V2ACTION API");
     }
-}
-
+};
 export const delete_v2action = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = deleteV2ActionValidator.parse(req.body);
@@ -682,8 +863,7 @@ export const create_t2action = async(req: Request, res: Response): Promise<any>=
     } catch (error) {
         handleError(error, res, "Error in CREATE T2ACTION API");
     }
-}
-
+};
 export const delete_t2action = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = deleteT2ActionValidator.parse(req.body);
@@ -784,8 +964,7 @@ export const create_video = async(req: Request, res: Response): Promise<any>=>  
         await deleteFiles(req.files as { [key: string]: MulterS3File[] });
         handleError(error, res, "Error in CREATE VIDEO API");
     }
-}
-
+};
 export const delete_video = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = deleteVideoValidator.parse(req.body);
@@ -912,7 +1091,7 @@ export const get_languages = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET LANGUAGES API");
     }
-}
+};
 export const get_seasons = async(req: Request, res: Response): Promise<any>=>{
     try {
         const season_id = req.query.id;
@@ -936,7 +1115,7 @@ export const get_seasons = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET VIDEOS API");
     }
-}
+};
 export const get_groups = async(req: Request, res: Response): Promise<any>=>{
     try {
         const group_id = req.query.id;
@@ -960,7 +1139,7 @@ export const get_groups = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET GROUPS API");
     }
-}
+};
 export const get_lessons = async(req: Request, res: Response): Promise<any>=>{
     try {
         const lesson_id = req.query.id;
@@ -984,7 +1163,7 @@ export const get_lessons = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET LESSONS API");
     }
-}
+};
 export const get_videos = async(req: Request, res: Response): Promise<any>=>{
     try {
         const video_id = req.query.id;
@@ -1008,7 +1187,7 @@ export const get_videos = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET VIDEOS API");
     }
-}
+};
 export const get_lectures = async(req: Request, res: Response): Promise<any>=>{
     try {
         const lecture_id = req.query.id;
@@ -1032,7 +1211,7 @@ export const get_lectures = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET LECTURES API");
     }
-}
+};
 export const get_v2text = async(req: Request, res: Response): Promise<any>=>{
     try {
         const v2text_id = req.query.id;
@@ -1056,7 +1235,7 @@ export const get_v2text = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET V2TEXT API");
     }
-}
+};
 export const get_t2video = async(req: Request, res: Response): Promise<any>=>{
     try {
         const t2video_id = req.query.id;
@@ -1080,7 +1259,7 @@ export const get_t2video = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET T2VIDEO API");
     }
-}
+};
 export const get_v2action = async(req: Request, res: Response): Promise<any>=>{
     try {
         const v2action_id = req.query.id;
@@ -1104,7 +1283,7 @@ export const get_v2action = async(req: Request, res: Response): Promise<any>=>{
     } catch (error) {
         handleError(error, res, "Error in GET V2ACTION API");
     }
-}
+};
 export const get_t2action = async(req: Request, res: Response): Promise<any>=>{
     try {
         const t2video_id = req.query.id;
