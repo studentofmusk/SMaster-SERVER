@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { uploadVideo } from "../Utils/upload.js";
-import { add_group, add_lesson, add_season, add_topic, create_group, create_language, create_lecture, create_lesson, create_season, create_t2action, create_t2video, create_v2action, create_v2text, create_video, delete_lecture, delete_t2action, delete_t2video, delete_v2action, delete_v2text, delete_video, get_groups, get_languages, get_lectures, get_lessons, get_seasons, get_t2action, get_t2video, get_v2action, get_v2text, get_videos, update_lesson } from "../Controllers/course.controller.js";
+import { add_group, add_lesson, add_season, add_topic, create_group, create_language, create_lecture, create_lesson, create_season, create_t2action, create_t2video, create_v2action, create_v2text, create_video, delete_group, delete_lecture, delete_lesson, delete_season, delete_t2action, delete_t2video, delete_v2action, delete_v2text, delete_video, get_groups, get_languages, get_lectures, get_lessons, get_seasons, get_t2action, get_t2video, get_v2action, get_v2text, get_videos, update_group, update_lesson, update_season } from "../Controllers/course.controller.js";
 const course_routes = Router();
 
 course_routes.post("/create-video", uploadVideo, create_video);
@@ -19,8 +19,13 @@ course_routes.post("/add-group", add_group);
 course_routes.post("/add-lesson", add_lesson);
 course_routes.post("/add-topic", add_topic);
 
+course_routes.post("/update-season", update_season);
+course_routes.post("/update-group", update_group);
 course_routes.post("/update-lesson", update_lesson);
 
+course_routes.post("/delete-season", delete_season);
+course_routes.post("/delete-group", delete_group);
+course_routes.post("/delete-lesson", delete_lesson);
 course_routes.post("/delete-video", delete_video);
 course_routes.post("/delete-lecture", delete_lecture);
 course_routes.post("/delete-v2text", delete_v2text);

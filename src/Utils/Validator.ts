@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import {z} from "zod";
 import { LessonTypes, TopicTypes } from "../Models/Lesson.js";
 
@@ -29,17 +29,17 @@ export const emailValidator = z.object({
 
 // ----------------- Course -------------------
 
+// Language
 export const languageValidator = z.object({
     title: z.string().min(3, "Title must contain 3 characters!").toUpperCase().trim(),
 })
-
+// Season
 export const createSeasonValidator = z.object({
     title: z.string().min(8, "Title should contain minimum 8 charecters. [Eg. Season N]").toUpperCase().trim(),
     language_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
         message:"Invalid Language ID!"
     })
 });
-
 export const addSeasonValidator = z.object({
     language_id:z.string().refine((val)=>mongoose.isValidObjectId(val), {
         message: "Invalid Language ID!"}),
@@ -47,14 +47,20 @@ export const addSeasonValidator = z.object({
         message: "Invalid Season ID!"
     })
 })
-
+export const updateSeasonValidator = z.object({
+    season_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Season ID!"}),
+    groups: z.array(z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Group ID exist!"}).transform((id)=>new mongoose.Types.ObjectId(id)))
+})
+export const deleteSeasonValidator = z.object({
+    season_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Season ID!"})
+})
+// Group
 export const createGroupValidator = z.object({
     title: z.string().min(4, "Title length more than 4").toLowerCase().trim(),
     season_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
         message:"Invalid Group ID"
     })
 });
-
 export const addGroupValidator = z.object({
     season_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
         message: "Invalid Season ID!"
@@ -63,7 +69,16 @@ export const addGroupValidator = z.object({
         message: "Invalid Group ID!"
     })
 })
-
+export const deleteGroupValidator = z.object({
+    group_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {
+        message: "Invalid Group ID!"
+    })
+})
+export const updateGroupValidator = z.object({
+    group_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Group ID!"}),
+    lessons:z.array(z.string().refine((lesson_id)=>mongoose.isValidObjectId(lesson_id), {message: "Invalid Lesson ID in Lessons! Please check."}).transform((val)=>new mongoose.Types.ObjectId(val)))
+})
+// Lesson
 export const createLessonValidator = z.object({
     group_id:z.string().refine((id)=>mongoose.isValidObjectId(id), 
     {message: "Invalid Group ID!"}),
@@ -75,7 +90,6 @@ export const addLessonValidator = z.object({
     lesson_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
     group_id:z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
 })
-
 export const updateLessonValidator = z.object({
     lesson_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
     topics: z.array(z.object({
@@ -87,7 +101,6 @@ export const updateLessonValidator = z.object({
         xp:z.number().int().min(0, "XP value must be possitive!")
     }))
 });
-
 export const addTopicValidator = z.object({
     lesson_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {message: "Invalid Lesson ID!"}),
     topic:z.object({
@@ -99,6 +112,12 @@ export const addTopicValidator = z.object({
         xp:z.number().int().min(0, "XP value must be possitive!")
     })
 })
+export const deleteLessonValidator = z.object({
+    lesson_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {
+        message:"Invalid Lesson ID!"
+    })
+})
+// Lecture
 export const lectureValidator = z.object({
     title: z.string()
         .min(1, "Title is required!")
@@ -109,7 +128,10 @@ export const lectureValidator = z.object({
             message: "Invalid Video ID! Please check it."
         })
 });
-
+export const deleteLectureValidator = z.object({
+    lecture_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
+}) 
+// V2Text
 export const v2TextValidator = z.object({
     title: z.string()
         .min(1, "Title is required!")
@@ -123,7 +145,10 @@ export const v2TextValidator = z.object({
 }).refine((obj)=>obj.options.includes(obj.title), {
     message: "Options does not contain answer! please check it again."
 });
-
+export const deleteV2TextValidator = z.object({
+    v2text_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
+}) 
+// T2Video
 export const t2VideoValidator = z.object({
     title: z.string()
         .min(1, "Title is required!")
@@ -135,7 +160,10 @@ export const t2VideoValidator = z.object({
         message: "Duplicate Video IDs are not allowed in options"
 })
 })
-
+export const deleteT2VideoValidator = z.object({
+    t2video_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
+}) 
+// V2Action
 export const v2ActionValidator = z.object({
     title: z.string()
         .min(1, "Title is required!")
@@ -145,7 +173,10 @@ export const v2ActionValidator = z.object({
         message: "Invalid V2Action ID!",
     })
 })
-
+export const deleteV2ActionValidator = z.object({
+    v2action_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid V2Action ID!"})
+}) 
+// T2Action
 export const t2ActionValidator = z.object({
     title: z.string()
         .min(1, "Title is required!")
@@ -155,7 +186,10 @@ export const t2ActionValidator = z.object({
         message: "Invalid V2Action ID!",
     })
 })
-
+export const deleteT2ActionValidator = z.object({
+    t2action_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Action ID ID!"})
+})
+// Video
 export const videoValidator = z.object({    
     title: z.string()
         .min(1, "Title is required!")
@@ -189,27 +223,13 @@ export const videoValidator = z.object({
             message: "Only .mp3 files are allowed for audio!",
         }),
 });
-
-
-export const deleteLectureValidator = z.object({
-    lecture_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
-}) 
-export const deleteV2TextValidator = z.object({
-    v2text_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
-}) 
-export const deleteT2VideoValidator = z.object({
-    t2video_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Video ID!"})
-}) 
-export const deleteV2ActionValidator = z.object({
-    v2action_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid V2Action ID!"})
-}) 
-export const deleteT2ActionValidator = z.object({
-    t2action_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid T2Action ID ID!"})
-}) 
-
 export const deleteVideoValidator = z.object({
     video_id: z.string().refine((val)=>mongoose.isValidObjectId(val), {message:"Invalid Video ID!"})
 }) 
+
+
+
+
 
 
 
