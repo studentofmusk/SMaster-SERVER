@@ -1308,3 +1308,23 @@ export const get_t2action = async(req: Request, res: Response): Promise<any>=>{
         handleError(error, res, "Error in GET T2ACTION API");
     }
 }
+// export const get_full_lesson = async (req: Request, res: Response):Promise<any>=>{
+//     try {
+//         const lesson_id = req.query.id;
+//         if(!lesson_id || !mongoose.isValidObjectId(lesson_id)) return res.status(StatusCodes.BAD_REQUEST).json({
+//             success: false,
+//             message: `Invalid Lesson ID!`
+//         });
+
+//         const LESSON = await Lesson.findById(lesson_id);
+//         if(!LESSON) return res.status(StatusCodes.NOT_FOUND).json({
+//             success: false,
+//             message: `Lesson NOT FOUND!`
+//         });
+        
+
+        
+//     } catch (error) {
+//         handleError(error, res, 'Error in GET FULL LESSON API');
+//     }
+// };

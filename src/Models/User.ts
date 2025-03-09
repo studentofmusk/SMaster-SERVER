@@ -13,8 +13,9 @@ export interface IUser extends Document {
     password: string;
     age: number;
     gender: Gender;
-    current: { [key: string]: string };
+    current: Map<string, string>;
     token: string;
+    xp: number;
     update_token: (token: string)=> Promise<any>;
     change_password: (password: string)=>Promise<any>;
 }
@@ -63,17 +64,19 @@ const userSchema = new Schema<IUser>(
             required: [true, "Password is required!"],
         },
         current: {
-            type: Object, 
-            of: String, 
+            type: Map, // Map is best for dynamic key-value pairs
+            of: String,
             required: true,
-            default: {
-                ASL: "0.0.0",
-            },
+            default: ()=> new Map([["ASL", "0.0.0"]]),
         },
         gender:{
             type: Number,
             enum: Gender,
             default: Gender.MALE
+        },
+        xp:{
+            type:Number,
+            default:0
         },
         token:{
             type: String,

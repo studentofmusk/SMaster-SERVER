@@ -228,6 +228,21 @@ export const deleteVideoValidator = z.object({
 }) 
 
 
+// User
+export const updateLevelValidator = z.object({
+    language_id: z.string().refine((id)=>mongoose.isValidObjectId(id), {
+        message: "Invalid Language ID!"
+    }),
+    current:z.string().transform((level) =>
+        level.split(".").map(Number)  // Convert each part to a number
+    ).refine((levelArr) =>
+        levelArr.length === 3 && levelArr.every(num => Number.isInteger(num) && num >= 0),
+        { message: "Invalid Level" }
+    ),
+    xp: z.number().int().min(0, "Invalid XP")
+})
+
+
 
 
 
