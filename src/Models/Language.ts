@@ -2,7 +2,7 @@ import mongoose, {Schema, Types, Document} from "mongoose";
 
 export interface ILanguage extends Document{
     title: string;
-    seasons?: Types.ObjectId[];
+    seasons: Types.ObjectId[];
     add_season: (season_id: Types.ObjectId)=>any
 }
 

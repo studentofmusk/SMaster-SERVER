@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { handleError } from "../Utils/errorHandler.js";
 import { StatusCodes } from "http-status-codes";
 
-interface AuthRequest extends Request{
+export interface AuthRequest extends Request{
     user_id?:any;
 }
 

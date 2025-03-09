@@ -80,7 +80,7 @@ export const login = async(req: Request, res: Response): Promise<any> => {
         return res.status(StatusCodes.OK).json({
             success: true,
             message: "Logged in Successfully!",
-            token: token
+            data: {token}
         });
 
     } catch (error) {
