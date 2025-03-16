@@ -39,6 +39,7 @@ export const signup = async(req: Request, res: Response): Promise<any> =>{
             last_name: validatedData.last_name,
             age: validatedData.age,
             gender:Gender[validatedData.gender],
+            profile:validatedData.profile,
             current: {[validatedData.language]:"0.0.0"}
         });
 

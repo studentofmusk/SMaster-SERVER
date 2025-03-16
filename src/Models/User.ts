@@ -13,9 +13,13 @@ export interface IUser extends Document {
     password: string;
     age: number;
     gender: Gender;
+    profile: string;
     current: Map<string, string>;
     token: string;
     xp: number;
+    streak: number;
+    lastActive: Date;
+    highestStreak:number;
     update_token: (token: string)=> Promise<any>;
     change_password: (password: string)=>Promise<any>;
 }
@@ -74,6 +78,10 @@ const userSchema = new Schema<IUser>(
             enum: Gender,
             default: Gender.MALE
         },
+        profile:{
+            type: String,
+            default: "default.png"
+        },
         xp:{
             type:Number,
             default:0
@@ -81,6 +89,18 @@ const userSchema = new Schema<IUser>(
         token:{
             type: String,
             default: ""
+        },
+        streak:{
+            type: Number,
+            default: 0
+        },
+        lastActive: {
+            type: Date,
+            default: null
+        },
+        highestStreak:{
+            type: Number,
+            default: 0
         }
     },
     { timestamps: true }

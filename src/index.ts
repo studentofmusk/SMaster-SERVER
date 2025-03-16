@@ -17,11 +17,13 @@ import auth_routes from "./Routes/auth.routes.js";
 import user_routes from "./Routes/user.routes.js";
 import course_routes from "./Routes/course.routes.js";
 import { request_error_handler } from "./Utils/handle_request.js";
+import predict_routes from "./Routes/predict.routes.js";
 
 //routes
 app.use("/api/auth", auth_routes);
 app.use("/api/user", user_routes)
 app.use("/api/course", course_routes)
+app.use("/api/predict", predict_routes);
 
 // middleware
 app.use(request_error_handler);
