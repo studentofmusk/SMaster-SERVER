@@ -28,6 +28,31 @@ export const get_user_profile = async (req: Request, res: Response):Promise<any>
     }
 };
 
+// Function to update streaks
+const updateStreak = async (userId: string): Promise<number> => {
+    const user = await User.findById(userId);
+    if (!user) throw new Error("User not found");
+
+    const today = new Date();
+    const lastActive = user.lastActive ? new Date(user.lastActive) : null;
+    let newStreak = user.streak;
+
+    if (!lastActive) {
+        newStreak = 1;
+    } else {
+        const diffDays = Math.floor((today.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+            newStreak += 1;
+        } else if (diffDays > 1) {
+            newStreak = 1;
+        }
+    }
+
+    return newStreak;  // Return the updated streak instead of saving here
+};
+
+
 export const update_level = async (req: Request, res: Response):Promise<any>=>{
     try {
         const validatedData = updateLevelValidator.parse(req.body);
@@ -64,6 +89,9 @@ export const update_level = async (req: Request, res: Response):Promise<any>=>{
         });
         
 
+        USER.streak = await updateStreak(USER._id as any)
+        USER.lastActive = new Date();
+
         if(GROUP.lessons.length - 1 <= lesson){
             lesson = 0;
             if(SEASON.groups.length - 1 <= group){
@@ -80,7 +108,6 @@ export const update_level = async (req: Request, res: Response):Promise<any>=>{
             lesson += 1;
         }
 
-        // console.log(`${season}.${group}.${lesson}`);
 
         USER.current = USER.current || new Map();
         USER.current.set(LANGUAGE.title, `${season}.${group}.${lesson}`);   
@@ -100,3 +127,4 @@ export const update_level = async (req: Request, res: Response):Promise<any>=>{
         handleError(error, res, 'Error in UPDATE LEVEL API');
     }
 };
+

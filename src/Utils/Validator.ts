@@ -1,16 +1,23 @@
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
 import {z} from "zod";
 import { LessonTypes, TopicTypes } from "../Models/Lesson.js";
 
 // ----------------- Auth -------------------
+const profiles = ["default.png", "male-1.png", "male-2.png", "male-3.png", "male-4.png", "male-5.png", "male-6.png", "female-1.png", "female-2.png", "female-3.png", "female-4.png", "female-5.png", "female-6.png"] 
 export const signupValidator = z.object({
     first_name: z.string().min(2, "First name is required").trim(),
     last_name: z.string().min(2, "Last name is required").trim(),
     email: z.string().email("Invalid email format").trim(),
     password: z.string().min(8, "Password must be at least 8 characters"),
-    age: z.number().int().min(5, "Age must be 18 or above").max(100, "Age must be less than 100"),
+    age: z
+    .string()
+    .transform((age) => parseInt(age, 10)) // Convert string to number
+    .pipe(z.number().int().min(18, "Age must be 18 or above").max(100, "Age must be less than 100")),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]),
     language: z.enum(["ASL"]),
+    profile:z.string().refine((profile)=>profiles.includes(profile), {
+        message:`Invalid Profile!`
+    }),
     otp: z.string().min(6, "OTP must have exactly 6 digits").max(6, "OTP must have exactly 6 digits")
 })
 export const loginValidator = z.object({
@@ -242,9 +249,6 @@ export const updateLevelValidator = z.object({
     xp: z.number().int().min(0, "Invalid XP")
 })
 
-
-
-
-
-
-
+export const predictValidator = z.object({
+    action_id: z.string()
+})
