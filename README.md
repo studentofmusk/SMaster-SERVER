@@ -1,9 +1,4 @@
 
----
-
-### ✅ 3. **SMaster-SERVER (Node.js Backend)**
-
-```markdown
 # SMaster Server - Node.js Backend
 
 This is the backend server for the SMaster application. It manages user authentication, course data, progress tracking, and acts as a bridge between the mobile app and the ML server.
